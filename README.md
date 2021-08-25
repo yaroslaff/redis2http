@@ -26,3 +26,16 @@ CLI is not main purpose for redis2http, but it's good for testing. Examples:
 ~~~
 redis2http.py --send GET https://google.com/
 ~~~
+
+## Usage from Python or from whatever (via redis)
+
+Put JSON-encoded data structure to `http_requests_queue` list (or use `-q` for other key name). Python example:
+~~~python
+data = {
+    'method': 'GET',
+    'url': 'https://example.com/hook',
+    'payload': None
+}
+request = json.dumps(data)
+redis_connection.lpush('http_requests_queue', request)
+~~~
