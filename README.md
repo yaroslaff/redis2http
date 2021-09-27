@@ -45,5 +45,10 @@ data = {
     'payload': None
 }
 request = json.dumps(data)
-redis_connection.lpush('http_requests_queue', request)
+redis_connection.sadd('http_requests_queue', request)
 ~~~
+
+## Set vs List
+redis2http may use queue as redis object of type `set` or type `list`. You may specify type as `--type` CLI option. Default is `set`.
+
+If you will use set and submit same data twice, only one HTTP request will be performed. If you will use list, both requests will be performed.

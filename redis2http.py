@@ -25,10 +25,18 @@ def get_redis():
         host=host, port=port,
         decode_responses=True)
 
-def iteration(redis):
-        request = redis.lpop(args.queue)
+def iteration(redis, type):
+        rmethods = {'list': redis.lpop, 'set': redis.spop}
+        
+        request = rmethods[type](args.queue)
+        
         if request:
-            req = json.loads(request)
+            try:
+                req = json.loads(request)
+            except json.decoder.JSONDecodeError:
+                log.warning('Invalid json: {!r}'.format(request))
+                return True
+            
             method = req['method'].upper()
             url = req['url']
             payload = req['payload']
@@ -57,9 +65,9 @@ def iteration(redis):
         else:
             return False
 
-def loop(redis):
+def loop(redis, type):
     while True:
-        if not iteration(redis):
+        if not iteration(redis, type):
             time.sleep(1)
 
 def main():
@@ -68,6 +76,7 @@ def main():
 
     def_redis = 'localhost:6379'
     def_queue = 'http_requests_queue'
+    def_type = 'set'
 
     parser = argparse.ArgumentParser(description='Redis-to-HTTP proxy')
     parser.add_argument('-v', dest='verbose', action='store_true',
@@ -84,8 +93,14 @@ def main():
         help=f'redis location unix/network socket def: {def_redis}')
     parser.add_argument('-q', '--queue', default=def_queue,
         help=f'queue (list) key name def: {def_queue}')
+    parser.add_argument('--type', default=def_type,
+        help=f'type of redis key, "set" or "list". def: {def_type}')
 
     args = parser.parse_args()
+
+    args.type = args.type.lower()
+
+    assert(args.type == 'set' or args.type == 'list')
 
     #signal.signal(signal.SIGINT, sighandler)
 
@@ -116,8 +131,8 @@ def main():
         r.lpush(args.queue, request)
 
     elif args.one:
-        iteration(r)
+        iteration(r, args.type)
     else:
-        loop(r)
+        loop(r, args.type)
 
 main()
