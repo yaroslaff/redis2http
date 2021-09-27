@@ -10,7 +10,7 @@ def read(filename):
 
 setup(
     name='redis2http',
-    version='0.0.1',
+    version='0.0.2',
     scripts=['redis2http.py'],
 
     # install_requires=[],
